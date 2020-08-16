@@ -2,10 +2,11 @@ const fs = require('fs')
 const mkdirp = require('mkdirp')
 const files = require('../../lib/files')
 const PackageManager = require('../../lib/packageManager')
+const DirectoryExistsError = require('./errors/DirectoryExistsError')
 
 function setProjectDirectory (directory) {
   if (files.directoryExists(directory)) {
-    throw new Error() // TODO: Make specific error
+    throw new DirectoryExistsError() // TODO: Make specific error
   }
 
   try {

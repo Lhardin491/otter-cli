@@ -33,7 +33,6 @@ function configurePackageManager ({ packageNames, action, options }) {
 }
 
 function executeCommand ({ command, args, options }) {
-  console.log(`Executing command ${command} ${args}`)
   return execa(command, args, {
     stdio: options.silent ? 'pipe' : 'inherit',
     cwd: options.root
