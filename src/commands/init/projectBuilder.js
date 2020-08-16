@@ -1,15 +1,32 @@
 const fs = require('fs')
+const mkdirp = require('mkdirp')
 const files = require('../../lib/files')
+const PackageManager = require('../../lib/packageManager')
 
-function createProject (projectName) {
-  const dir = [files.getCurrentDirectoryBase(), projectName].join('')
-  fs.mkdirSync(projectName)
-  fs.mkdirSync([projectName, 'cucumber'].join('/'))
-  createBuildFiles(projectName)
+function setProjectDirectory (directory) {
+  if (files.directoryExists(directory)) {
+    throw new Error() // TODO: Make specific error
+  }
+
+  try {
+    mkdirp.sync(directory)
+    process.chdir(directory)
+  } catch (error) {
+    console.error('Error occurred while trying to create project directory.', error)
+  }
+
+  return process.cwd()
 }
 
-function createBuildFiles (path) {
-  fs.writeFileSync(path + '/build.js', 'const otter = require(\'ottermator\')\notter.Builder(require(\'./config\'))\n\n')
+async function installDeps ({ projectName, npm, root }) {
+  console.log('Installing dependencies...')
+
+  await PackageManager.installAll({ npm, silent: false, root })
+
+  console.log('Done.')
+}
+
+function createBuildFiles (path, projectName) {
   fs.writeFileSync(path + '/config.js',
   `const Otter = require('ottermator')
   const { Extract, Schema } = Otter
@@ -20,8 +37,8 @@ function createBuildFiles (path) {
   externals: {}\n}\n`)
   fs.writeFileSync(path + '/cucumber.js', 'process.env.MOCK = 1\n')
   fs.writeFileSync(path + '/index.js', 'require(\'dotenv\').config()\n\nconst express = require(\'express\')\nconst app = express()\nconst bodyparser = require(\'body-parser\')\n\napp.use(bodyparser.json())\napp.use(require(\'./domains/routes\'))\napp.listen(3000)\n')
-  const package = {
-    name: path,
+  const pkgJson = {
+    name: projectName,
     version: '1.0.0',
     description: '',
     main: 'index.js',
@@ -46,7 +63,18 @@ function createBuildFiles (path) {
     author: '',
     license: 'ISC'
   }
-  fs.writeFileSync(path + '/package.json', JSON.stringify(package, null, 4))
+  fs.writeFileSync(path + '/package.json', JSON.stringify(pkgJson, null, 4))
+}
+
+async function createProject ({ projectName, directoryName, version, options }) {
+  const projectDirectory = await setProjectDirectory(directoryName)
+
+  try {
+    createBuildFiles(projectDirectory, projectName)
+    await installDeps({ projectName, npm: true, root: projectDirectory })
+  } catch (error) {
+    console.error('Error building project.', error)
+  }
 }
 
 module.exports = {

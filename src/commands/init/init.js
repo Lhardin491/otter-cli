@@ -1,3 +1,4 @@
+const path = require('path')
 const clear = require('clear')
 const figlet = require('figlet')
 const chalk = require('chalk')
@@ -14,8 +15,12 @@ async function init (argv, passedOptions) {
   )
 
   const { projectName } = await inquirer.askProjectName()
+  const root = process.cwd()
+
+  const directoryName = path.relative(root, projectName)
+
   console.log(`Creating project ${projectName}`)
-  projectBuilder.createProject(projectName)
+  projectBuilder.createProject({ projectName, directoryName })
 }
 
 module.exports = init
